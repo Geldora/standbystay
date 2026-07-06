@@ -1,6 +1,7 @@
 # StandByStay — A Travel Concierge for Standby (non-rev) travellers 
 
-Built for the RouteStack Build Challenge (21-day hackathon).
+Built for the RouteStack Build Challenge (21-day hackathon) by Valentina Borovaya
+LinkedIn: https://www.linkedin.com/in/valentinaborovaya/
 
 ## The problem
 
@@ -36,10 +37,14 @@ button that opens RouteStack's real checkout portal. RouteStack doesn't expose t
 confirmed state with the real address, dates, and RouteStack-issued
 booking reference pulled from the API's own hotel-details response.
 
+## AI usage disclosure
+
+I used Claude for planning, designing and coding the StandByStay.
+
 ## Architecture
 
 - Node/TypeScript backend (Hono), single-page vanilla JS/HTML frontend
-- Claude (or OpenAI/Mistral, pluggable) drives the conversation and decides
+- Claude drives the conversation and decides
   when to call RouteStack MCP tools; the confirm-before-search gate and
   fixed preference set are enforced in the system prompt, not inferred
 - RouteStack MCP handles hotel search and checkout only — zero flight
@@ -51,7 +56,7 @@ booking reference pulled from the API's own hotel-details response.
 - SQLite persists each case (destinations, retained picks, resolution
   status) so it can be resumed from a signed link
 
-## Context for architectural decisions
+## Context for product decisions
 
 We researched the "book both, cancel if destination is not cleared" pattern.  however the free cancellation windows are often relative to the hotel check-in time. Non-rev travellers are looking for last minute availability for the same day as the planned hotel check-in. Booking a room in advance creates a lapsed-cancellation risk. 
 
