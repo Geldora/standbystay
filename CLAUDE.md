@@ -54,8 +54,6 @@ under Out of Scope.
 
 ## Core flow
 
-## Core flow
-
 ### 1. Confirm-before-search gate
 The agent states its assumed scope (both destinations, the date, the fixed
 preference set) and waits for explicit user confirmation before calling any
