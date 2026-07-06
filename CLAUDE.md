@@ -8,7 +8,7 @@ Built for the RouteStack Build Challenge (21-day hackathon).
 
 **The problem:** non-rev travelers don't know if they have a seat until the gate, or
 boarding. That makes booking a hotel in advance impossible — but they still want a
-ready lodging plan the moment they know where they've landed.
+ready accomodation plan the moment they know where they've landed.
 
 **What this is not:** a flight booking tool. Non-rev flights aren't bookable through
 RouteStack or any commercial engine — zero flight logic exists in this app.
@@ -120,20 +120,6 @@ Established via mockup, not open for restyling without discussion:
   destination/date parsing — the corridor is hardcoded, not generalized. Free
   typing in the chat input is a UX affordance, not a parser: the agent's recap
   always restates Paris/Barcelona regardless of what's typed.
-- Orizn API or any other third-party data source
-- Invitation-letter drafting (leftover exclusion from an earlier, abandoned visa-
-  concierge concept — not applicable here, kept for clarity)
-
-## Open technical risks — verify early, before building on top of them
-
-1. Does RouteStack's hotel search return usable near-term/last-minute inventory,
-   with free-cancellation data still present that close to arrival?
-2. Does hotel search support filtering/sorting by proximity to a landmark or
-   airport, or does this need to be computed from returned coordinates?
-3. Does the 3★ filter return reasonable results for both Paris and Barcelona?
-
-Test these with direct sandbox calls before wiring the confirm-before-search gate
-or the UI around them.
 
 ## Decision log (why, not just what)
 
@@ -148,25 +134,3 @@ or the UI around them.
   this app's own system prompt — the confirm-before-search gate would have to be
   rebuilt through tool descriptions instead of a system prompt this project fully
   owns. Both are reasonable V2 ideas, neither is worth the V1 build time/control cost.
-- **This whole project supersedes an earlier Schengen-visa-concierge concept**
-  (Kazakhstan→France corridor, visitor/host flow, invitation-letter drafting).
-  That concept was fully abandoned, not partially merged — don't resurrect pieces
-  of it (visa rules, purpose-inference clarifying question) without explicit instruction.
-
-## Future roadmap (post-hackathon, not V1)
-
-- **Surfaces:** Telegram bot on the same backend; a Claude Connector version
-  (local Desktop config first, official remote Custom Connector later if a public
-  endpoint is worth maintaining)
-- **Generalization:** freeform destination and date input with real parsing,
-  beyond 2 hardcoded candidate destinations, multi-night stays
-- **Pattern upgrade:** if RouteStack ever exposes a true non-committal hold/quote
-  primitive (price-lock without a real reservation), revisit Pattern 2 vs. a
-  proper Pattern 3 — don't build toward this until it's confirmed to exist
-- **Bonus hotel signals:** last-minute deal flagging, late-checkout availability
-- **Distribution:** the realistic path to meaningful usage is airline-employee
-  partnerships (offered as a travel-benefit perk) rather than direct-to-consumer
-  growth — this audience doesn't discover apps through normal channels
-- **Monetization:** commission share on hotel bookings via RouteStack's partner
-  terms — unit economics look workable at a few hundred to low-thousands of
-  active repeat users; this is a sustainable niche product, not a venture-scale one
