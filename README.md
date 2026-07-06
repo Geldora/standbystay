@@ -1,23 +1,27 @@
-# StandByStay — Non-Rev Travel Concierge
+# StandByStay — A Travel Concierge for Standby (non-rev) travellers 
 
 Built for the RouteStack Build Challenge (21-day hackathon).
 
 ## The problem
 
-Airline employees flying non-rev (standby, last-minute, deeply discounted —
-never bookable through a commercial engine) don't know which city they'll
-land in until they clear at the gate. That makes booking a hotel in advance
-impossible, but they still want a ready lodging plan the moment they know
-where they've ended up. Existing booking tools assume you know your
-itinerary in advance; non-rev travelers fly leg by leg with no fixed one.
+Airline employees can fly standby. The tickets are deeply discounted, but the seat availability is confirmed at the last minute, sometimes at the boarding gates.  
+Sometimes, standby travellers don't know which city they'll land in until they clear at the gate. 
+That makes booking a hotel in advance almost impossible. Existing booking tools assume you know your
+itinerary in advance; non-rev travellers fly leg by leg and have no guarantee they end up where they planned to be.
 
-## What it does
+As an airline employee, I've been using standby tickets and found myself booking hotels at the boarding gates, or while in the aircraft waiting to take-off, or even when I landed.
 
-StandByStay is a conversational concierge, not a booking engine, that
-front-loads the research so the only thing left to do at the gate is
+This tool was created to solve the problem of standby travelers accommodation.  
+
+## What StandByStay does
+
+StandByStay is a conversational concierge that
+front-loads the research. Once traveller confirms their destination, they'll only need to 
 confirm and pay.
 
-For this V1 demo, the corridor is hardcoded: home base Dublin, two
+## Limitation of the demo
+
+For this demo, the destinations are hardcoded: traveller is flying from Dublin, two
 candidate destinations — Paris or Barcelona — for the night of
 July 11, 2026, against a fixed preference set (3★, walking distance to the
 city center, easy airport transfer, 2 adults, 1 night, €150 cap). The
@@ -27,21 +31,13 @@ touching any RouteStack tool — nothing is searched silently.
 Once confirmed, it searches RouteStack hotel inventory for **both**
 destinations at once, keeping a top pick and a backup pick per city in
 reserve, but only makes a live checkout call once the user reports which
-destination actually cleared. Nothing is held or reserved before that —
-non-rev free-cancellation windows are pegged to check-in time, not booking
-time, so holding a room early just creates a lapsed-cancellation risk for
-no benefit. The losing destination's picks are simply discarded.
+destination actually cleared. Nothing is held or reserved before that. The "losing" destination's hotels are discarded.
 
-Each hotel renders as a boarding-pass-style card: an amber "stub" (airport
-code, city, star rating) torn via a dashed perforation from the hotel
-details below it — walk time to center, airport transfer time, price per
-night. On resolution, the winning card becomes a "Complete your booking →"
-button that opens RouteStack's real checkout portal; since RouteStack
-exposes no payment-confirmation webhook, the demo simulates a 10-second
+Each hotel renders as a stylized boarding-pass-style card. Once destination is confirmed, the winning card becomes a "Complete your booking →"
+button that opens RouteStack's real checkout portal. RouteStack doesn't expose the payment-confirmation webhook, so the demo simulates a 10-second
 "processing" countdown after the click and then flips the card to a
 confirmed state with the real address, dates, and RouteStack-issued
-booking reference pulled from the API's own hotel-details response — no
-fabricated data.
+booking reference pulled from the API's own hotel-details response.
 
 ## Architecture
 
@@ -58,12 +54,16 @@ fabricated data.
 - SQLite persists each case (destinations, retained picks, resolution
   status) so it can be resumed from a signed link
 
-## What's deliberately out of scope for V1
+## Context for architectural decisions
 
-No flight search, no multi-night stays, no more than two candidate
-destinations, no freeform date/destination parsing — the corridor is
+We researched the "book both, cancel if destination is not cleared" pattern.  however the free cancellation windows are often relative to the hotel check-in time. Non-rev travellers are looking for last minute availability for the same day as the planned hotel check-in. Booking a room in advance creates a lapsed-cancellation risk. 
+
+## What's deliberately out of scope
+
+- No flight search: standby inventory is not available publicly
+- Mo multi-night stays, no more than two candidate
+destinations, no freeform date/destination parsing: the user input is
 hardcoded rather than generalized, and the chat input's free text is a UX
-affordance, not a parser. See `CLAUDE.md` in the repo root for the full
-decision log, including why a standalone site was chosen over a Telegram
+affordance, not a parser.
 bot or Claude Connector, and why search-retain-display was chosen over a
 hold-then-resolve pattern.
