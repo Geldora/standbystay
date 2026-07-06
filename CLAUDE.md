@@ -54,6 +54,8 @@ under Out of Scope.
 
 ## Core flow
 
+## Core flow
+
 ### 1. Confirm-before-search gate
 The agent states its assumed scope (both destinations, the date, the fixed
 preference set) and waits for explicit user confirmation before calling any
@@ -72,10 +74,35 @@ agent just states and waits.
 
 ### 3. Resolution — driven entirely by what the user reports in chat
 When the user reports which destination they landed in (or that neither cleared):
-- Make **one live booking call** for that destination's retained top pick
-- If that call fails, retry with the backup pick
+- Run the checkout-preparation chain (`get_rooms_and_rates` → `revalidate` →
+  `hotel_get_payment_url`) for that destination's retained top pick, producing a
+  real RouteStack checkout URL
+- **This does not complete a booking.** RouteStack has no server-side instant-
+  booking or payment-confirmation API — the checkout URL only prepares payment;
+  the user completes it on RouteStack's portal
+- If `get_rooms_and_rates` fails on the top pick, retry once with the backup
+  hotel from SESSION STATE (real hotel-level fallback, distinct from the CUG
+  sandbox's synthetic-room injection below)
+- In the CUG sandbox, offers frequently return `5148 offer expired` on
+  `get_rooms_and_rates`/`revalidate` — this is expected sandbox behavior, not a
+  bug. The server injects a placeholder room for the *same* hotel so the chain
+  can still reach `hotel_get_payment_url`; this is separate from, and takes
+  priority under, the backup-hotel retry above
 - Discard the other destination's retained options
-- No automated polling, ever. Resolution only happens off what's typed in chat.
+- No automated polling, ever. Resolution only happens off what's typed in chat
+- The checkout URL is only ever surfaced via the boarding-pass card's button —
+  never as raw/markdown text in a chat reply
+
+### 4. Mocked transaction-complete (demo-only simulation)
+After the user clicks "Complete your booking →" and the real RouteStack checkout
+opens in a new tab, the card starts a 10-second countdown, then calls back
+(`POST /api/mock-confirm`) to mark the case confirmed. The confirmed card state
+shows real address, check-in/checkout times, guest rating, and a RouteStack-
+issued reference (`RS-{correlationId prefix}`) — all sourced from the
+`get_hotel_details` response already fetched earlier in the chain, not invented.
+This step exists only because RouteStack exposes no real payment-confirmation
+webhook; it is explicitly a demo simulation, not a claim that payment was
+verified.
 
 ## UI design direction
 
