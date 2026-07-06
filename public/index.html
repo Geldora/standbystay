@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StandByStay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --ink:    #14181F;
+        --paper:  #FFFFFF;
+        --canvas: #EEF0F4;
+        --amber:  #E2A33D;
+        --teal:   #1F7A6C;
+        --slate:  #7B8494;
+        --border: #D4D8E0;
+        --radius: 12px;
+        --font:   "Space Grotesk", system-ui, sans-serif;
+        --mono:   "IBM Plex Mono", monospace;
+      }
+
+      html, body {
+        height: 100%;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: var(--font);
+        font-size: 15px;
+        line-height: 1.6;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        max-width: 480px;
+        margin: 0 auto;
+        min-height: 100dvh;
+      }
+
+      /* ── Header ── */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        background: var(--paper);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+
+      .header-brand {
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .header-brand span { color: var(--amber); }
+
+      .end-btn {
+        flex-shrink: 0;
+        width: 40px; height: 40px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-family: var(--mono);
+        color: var(--slate);
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .end-btn:hover { color: var(--ink); border-color: var(--slate); }
+      .end-btn.visible { display: flex; }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--slate);
+        font-family: var(--mono);
+      }
+
+      .dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--border);
+      }
+      .dot.on { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+
+      /* ── Messages ── */
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .msg { max-width: 85%; }
+      .msg.user { align-self: flex-end; }
+      .msg.assistant { align-self: flex-start; }
+
+      .bubble {
+        padding: 10px 14px;
+        border-radius: var(--radius);
+        word-break: break-word;
+      }
+
+      .msg.user .bubble {
+        background: var(--amber);
+        color: var(--ink);
+        border-bottom-right-radius: 4px;
+      }
+
+      .msg.assistant .bubble {
+        background: var(--paper);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+      }
+
+      .bubble p { margin-bottom: 6px; }
+      .bubble p:last-child { margin-bottom: 0; }
+      .bubble strong { font-weight: 600; }
+
+      .msg-time {
+        font-size: 11px;
+        color: var(--slate);
+        margin-top: 3px;
+        padding: 0 4px;
+        font-family: var(--mono);
+      }
+      .msg.user .msg-time { text-align: right; }
+
+      /* ── Boarding-pass cards ── */
+      .cards {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 0 16px 4px;
+      }
+
+      .card {
+        background: var(--paper);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        transition: opacity 0.3s, filter 0.3s;
+      }
+
+      /* Stub */
+      .stub {
+        background: var(--amber);
+        padding: 12px 16px;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+
+      .card.booked .stub { background: var(--teal); }
+
+      .stub-iata {
+        font-family: var(--mono);
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--paper);
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+
+      .stub-city {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--paper);
+        opacity: 0.9;
+      }
+
+      .stub-stars {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--paper);
+        opacity: 0.8;
+        margin-left: auto;
+        letter-spacing: 0.05em;
+      }
+
+      /* Perforation */
+      .perf {
+        display: flex;
+        align-items: center;
+        margin: 0 -1px;
+        position: relative;
+      }
+
+      .hole {
+        width: 18px; height: 18px;
+        background: var(--canvas);
+        border-radius: 50%;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        margin: 0 -9px;
+        z-index: 1;
+      }
+
+      .dash-line {
+        flex: 1;
+        border-top: 2px dashed var(--border);
+        margin: 0 2px;
+      }
+
+      /* Card body */
+      .card-body {
+        padding: 14px 16px 16px;
+      }
+
+      .hotel-name {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--ink);
+      }
+
+      .hotel-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        color: var(--slate);
+        font-family: var(--mono);
+      }
+
+      .hotel-price {
+        font-family: var(--mono);
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--ink);
+        margin-bottom: 12px;
+      }
+
+      .hotel-price span {
+        font-size: 12px;
+        color: var(--slate);
+        font-weight: 400;
+      }
+
+      .select-btn {
+        width: 100%;
+        padding: 10px 16px;
+        background: var(--ink);
+        color: var(--paper);
+        border: none;
+        border-radius: 8px;
+        font-family: var(--font);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+
+      .select-btn:hover { opacity: 0.85; }
+
+      .checkout-btn {
+        width: 100%;
+        padding: 10px 16px;
+        background: var(--teal);
+        color: var(--paper);
+        border: none;
+        border-radius: 8px;
+        font-family: var(--font);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+        text-align: center;
+        transition: opacity 0.15s;
+      }
+
+      .checkout-btn:hover { opacity: 0.85; }
+
+      .card.released-strip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 14px;
+        opacity: 0.55;
+        filter: grayscale(0.4);
+        box-shadow: none;
+      }
+
+      .released-strip-city {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--ink);
+      }
+
+      .released-strip-label {
+        font-size: 12px;
+        color: var(--slate);
+        font-family: var(--mono);
+      }
+
+      @media (max-width: 480px) {
+        .cards { gap: 10px; }
+        .stub { padding: 10px 14px; }
+        .card-body { padding: 12px 14px 14px; }
+      }
+
+      .countdown-block {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: var(--canvas);
+        border-radius: 8px;
+      }
+
+      .countdown-spinner {
+        width: 14px; height: 14px;
+        border: 2px solid var(--border);
+        border-top-color: var(--teal);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        flex-shrink: 0;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .countdown-text {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--ink);
+      }
+
+      .card.confirmed .stub { background: var(--teal); }
+
+      .confirmed-block {
+        background: var(--canvas);
+        border: 1px solid var(--teal);
+        border-radius: 8px;
+        padding: 10px 14px;
+      }
+
+      .confirmed-badge {
+        font-weight: 600;
+        color: var(--teal);
+        margin-bottom: 6px;
+      }
+
+      .confirmed-detail {
+        font-size: 12px;
+        color: var(--ink);
+        margin-bottom: 4px;
+      }
+
+      .confirmed-ref {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--slate);
+        margin-top: 4px;
+      }
+
+      /* ── Typing indicator ── */
+      .typing {
+        align-self: flex-start;
+        background: var(--paper);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        border-bottom-left-radius: 4px;
+        padding: 12px 16px;
+        display: none;
+        gap: 4px;
+        align-items: center;
+      }
+      .typing.visible { display: flex; }
+
+      .typing-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--slate);
+        animation: bounce 1.4s infinite ease-in-out;
+      }
+      .typing-dot:nth-child(2) { animation-delay: 0.16s; }
+      .typing-dot:nth-child(3) { animation-delay: 0.32s; }
+
+      /* ── Input ── */
+      .input-area {
+        padding: 12px 16px 16px;
+        background: var(--paper);
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+
+      .input-row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+      }
+
+      .input-row textarea {
+        flex: 1;
+        resize: none;
+        overflow: hidden;
+        min-height: 40px;
+        max-height: 120px;
+        padding: 9px 12px;
+        font-family: var(--font);
+        font-size: 15px;
+        line-height: 1.5;
+        color: var(--ink);
+        background: var(--canvas);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .input-row textarea:focus { border-color: var(--amber); }
+      .input-row textarea::placeholder { color: var(--slate); }
+
+      .send-btn {
+        flex-shrink: 0;
+        width: 40px; height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--amber);
+        color: var(--ink);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      .send-btn:hover { opacity: 0.85; }
+      .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+      .send-btn svg { width: 17px; height: 17px; }
+
+      .error-msg { font-size: 12px; color: #dc2626; padding: 6px 0 0; }
+
+      .system-msg {
+        align-self: center;
+        font-size: 11px;
+        color: var(--slate);
+        font-family: var(--mono);
+        text-align: center;
+        padding: 4px 14px;
+        background: var(--canvas);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        margin: 2px 0;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40%            { transform: scale(1); }
+      }
+
+      .msg, .cards { animation: fadeIn 0.2s ease-out; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-brand">StandBy<span>Stay</span></div>
+      <div class="status">
+        <div class="dot" id="dot"></div>
+        <span id="statusText">Connecting…</span>
+      </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <button class="end-btn" id="endBtn" onclick="endChat()" title="End chat">End</button>
+        <textarea id="input" rows="1" placeholder="Type a message…" disabled></textarea>
+        <button class="send-btn" id="sendBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <script>
+      const messagesEl = document.getElementById("messages");
+      const inputEl    = document.getElementById("input");
+      const sendBtn    = document.getElementById("sendBtn");
+      const endBtnEl   = document.getElementById("endBtn");
+      const dot        = document.getElementById("dot");
+      const statusText = document.getElementById("statusText");
+      const errorMsg   = document.getElementById("errorMsg");
+
+      let sessionId = localStorage.getItem("nrc_session") || null;
+      let busy      = false;
+      let cardsEl   = null; // persistent card row element
+      let hadCards  = false; // true once cards have been shown this session
+      let lastHotels  = null; // last hotels payload, kept for re-render after mock-confirm
+      let lastBooking = null; // last booking payload, kept for re-render after mock-confirm
+      const countdownTimers = {}; // dest -> interval id, guards against double-start
+
+      // ── Auto-resize textarea ──
+      inputEl.addEventListener("input", () => {
+        inputEl.style.height = "auto";
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+      });
+
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+      });
+
+      sendBtn.addEventListener("click", () => send());
+
+      // ── Health check ──
+      async function checkHealth() {
+        try {
+          const res  = await fetch("/health");
+          const data = await res.json();
+          dot.classList.add("on");
+          statusText.textContent = `${data.tools} tools`;
+          inputEl.disabled  = false;
+          sendBtn.disabled  = false;
+          inputEl.focus();
+        } catch {
+          statusText.textContent = "Offline";
+          errorMsg.textContent   = "Cannot reach server.";
+        }
+      }
+
+      // ── Send ──
+      async function send(overrideText) {
+        const text = overrideText || inputEl.value.trim();
+        if (!text || busy) return;
+
+        errorMsg.textContent = "";
+        busy = true;
+        inputEl.disabled = true;
+        sendBtn.disabled = true;
+
+        addMessage("user", text);
+        inputEl.value = "";
+        inputEl.style.height = "auto";
+        showTyping(true);
+
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text, sessionId }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Request failed");
+
+          showTyping(false);
+
+          // Persist session ID and show End button
+          if (data.sessionId) {
+            sessionId = data.sessionId;
+            localStorage.setItem("nrc_session", sessionId);
+            endBtnEl.classList.add("visible");
+          }
+
+          addMessage("assistant", data.response);
+
+          // Update cards on every response that carries hotel state
+          if (data.hotels && (data.stage === "showing_options" || data.stage === "searching")) {
+            lastHotels = data.hotels;
+            lastBooking = null;
+            renderCards(data.hotels, null);
+          } else if (data.stage === "resolved") {
+            lastHotels = data.hotels;
+            lastBooking = data.booking;
+            renderCards(data.hotels, data.booking);
+          } else if (data.stage === "idle" && hadCards) {
+            // Both destinations exhausted — auto reset
+            removeCards();
+            addSystemMessage("No options available — chat reset. Start a new search below.");
+            resetSession();
+          }
+        } catch (err) {
+          showTyping(false);
+          errorMsg.textContent = err.message;
+        } finally {
+          busy = false;
+          inputEl.disabled = false;
+          sendBtn.disabled = false;
+          inputEl.focus();
+        }
+      }
+
+      // ── Boarding-pass cards ──
+      function renderCards(hotels, booking) {
+        if (!cardsEl) {
+          cardsEl = document.createElement("div");
+          cardsEl.className = "cards";
+          messagesEl.appendChild(cardsEl);
+        }
+        cardsEl.innerHTML = "";
+        hadCards = true;
+
+        const dests = ["paris", "barcelona"];
+        for (const dest of dests) {
+          const hotel = hotels && hotels[dest];
+          if (!hotel) continue;
+
+          const isWinner    = booking && booking.destination === dest;
+          const isLoser     = booking && booking.destination && booking.destination !== dest;
+          const isConfirmed = isWinner && booking.confirmed;
+
+          const card = document.createElement("div");
+          card.dataset.dest = dest;
+
+          // Per CLAUDE.md spec, the losing card is meant to be a faded "strip",
+          // not a full boarding pass — collapse it to reclaim mobile screen space.
+          if (isLoser) {
+            card.className = "card released-strip";
+            card.innerHTML = `
+              <span class="released-strip-city">${escHtml(hotel.iata)} · ${escHtml(hotel.city)}</span>
+              <span class="released-strip-label">Released — not needed</span>`;
+            cardsEl.appendChild(card);
+            continue;
+          }
+
+          card.className = "card" + (isWinner ? " booked" : "") + (isConfirmed ? " confirmed" : "");
+
+          const price = hotel.ourprice ? `€${Math.round(hotel.ourprice)}` : "—";
+          const dist  = hotel.distance != null ? `${hotel.distance.toFixed(1)} km to centre` : "";
+          const xfer  = hotel.airportTransferMins ? `~${hotel.airportTransferMins} min ${hotel.iata}` : "";
+          const stars = "★".repeat(Math.round(hotel.starRating || 3));
+
+          let actionHtml = "";
+          if (isConfirmed) {
+            const s = booking.summary || {};
+            actionHtml = `
+              <div class="confirmed-block">
+                <p class="confirmed-badge">✓ Booking Confirmed</p>
+                ${s.address ? `<p class="confirmed-detail">📍 ${escHtml(s.address)}</p>` : ""}
+                <p class="confirmed-detail">📅 ${escHtml(s.checkIn || "")}${s.checkinTime ? ` from ${escHtml(s.checkinTime)}` : ""} → ${escHtml(s.checkOut || "")}${s.checkoutTime ? ` by ${escHtml(s.checkoutTime)}` : ""}</p>
+                ${s.guestRating ? `<p class="confirmed-detail">⭐ ${escHtml(String(s.guestRating))}/5${s.reviewCount ? ` (${escHtml(String(s.reviewCount))} reviews)` : ""}</p>` : ""}
+                <p class="confirmed-ref">Ref: ${escHtml(s.reference || "")}</p>
+              </div>`;
+          } else if (isWinner && booking.checkoutUrl) {
+            actionHtml = `<a class="checkout-btn" href="${escHtml(booking.checkoutUrl)}" target="_blank" rel="noopener noreferrer" onclick="startCheckoutCountdown('${dest}')">Complete your booking →</a>`;
+          } else {
+            actionHtml = `<button class="select-btn" onclick="selectDest('${dest}')">Select if I land in ${hotel.city} →</button>`;
+          }
+
+          card.innerHTML = `
+            <div class="stub">
+              <span class="stub-iata">${escHtml(hotel.iata)}</span>
+              <span class="stub-city">${escHtml(hotel.city)}</span>
+              <span class="stub-stars">${escHtml(stars)}</span>
+            </div>
+            <div class="perf">
+              <div class="hole"></div>
+              <div class="dash-line"></div>
+              <div class="hole"></div>
+            </div>
+            <div class="card-body">
+              <p class="hotel-name">${escHtml(hotel.name)}</p>
+              <div class="hotel-meta">
+                ${dist ? `<span>${escHtml(dist)}</span>` : ""}
+                ${xfer ? `<span>${escHtml(xfer)}</span>` : ""}
+              </div>
+              <div class="hotel-price">${escHtml(price)} <span>/ night</span></div>
+              <div class="action-area" id="action-${dest}">${actionHtml}</div>
+            </div>`;
+
+          cardsEl.appendChild(card);
+        }
+
+        // If nothing rendered (all destinations exhausted), remove the container
+        if (cardsEl.children.length === 0) removeCards();
+      }
+
+      function removeCards() {
+        if (cardsEl) { cardsEl.remove(); cardsEl = null; }
+      }
+
+      // ── Demo: mock RouteStack payment-success countdown ──
+      // Real RouteStack checkout still opens in its own tab (the <a> keeps its
+      // real href) — this just simulates the confirmation callback that doesn't
+      // exist yet, so the "Transaction Complete" step can be shown live.
+      function startCheckoutCountdown(dest) {
+        if (countdownTimers[dest]) return;
+
+        let seconds = 10;
+        const actionEl = document.getElementById(`action-${dest}`);
+        if (!actionEl) return;
+
+        const render = () => {
+          actionEl.innerHTML = `
+            <div class="countdown-block">
+              <div class="countdown-spinner"></div>
+              <span class="countdown-text">Confirming with RouteStack… ${seconds}s</span>
+            </div>`;
+        };
+        render();
+
+        countdownTimers[dest] = setInterval(() => {
+          seconds -= 1;
+          if (seconds <= 0) {
+            clearInterval(countdownTimers[dest]);
+            delete countdownTimers[dest];
+            confirmBooking(dest);
+            return;
+          }
+          render();
+        }, 1000);
+      }
+
+      async function confirmBooking(dest) {
+        try {
+          const res = await fetch("/api/mock-confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Confirmation failed");
+
+          lastBooking = { ...lastBooking, confirmed: true, summary: data.summary };
+          addMessage("assistant", data.message);
+          renderCards(lastHotels, lastBooking);
+
+          // Case is done — reset immediately so the next message starts a fresh
+          // search rather than resuming this (now-terminal) session. The confirmed
+          // boarding pass stays visible above; only the session pointer resets.
+          resetSession();
+          addSystemMessage("Chat reset — start a new search whenever you're ready.");
+        } catch (err) {
+          errorMsg.textContent = err.message;
+        }
+      }
+
+      function resetSession() {
+        sessionId = null;
+        localStorage.removeItem("nrc_session");
+        hadCards = false;
+        endBtnEl.classList.remove("visible");
+      }
+
+      function endChat() {
+        removeCards();
+        addSystemMessage("Chat ended. Start a new search below.");
+        resetSession();
+      }
+
+      function addSystemMessage(text) {
+        const div = document.createElement("div");
+        div.className = "system-msg";
+        div.textContent = text;
+        messagesEl.appendChild(div);
+        div.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function selectDest(dest) {
+        const labels = { paris: "I landed in Paris!", barcelona: "I landed in Barcelona!" };
+        send(labels[dest]);
+      }
+
+      // ── Message helpers ──
+      function addMessage(role, content) {
+        const div  = document.createElement("div");
+        div.className = `msg ${role}`;
+        const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        div.innerHTML = `
+          <div class="bubble">${renderText(content)}</div>
+          <div class="msg-time">${time}</div>`;
+        // Insert before cards if present
+        if (cardsEl && cardsEl.parentNode === messagesEl) {
+          messagesEl.insertBefore(div, cardsEl);
+        } else {
+          messagesEl.appendChild(div);
+        }
+        div.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function showTyping(visible) {
+        let el = document.getElementById("typing");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "typing";
+          el.className = "typing";
+          el.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+        }
+        if (visible) {
+          el.classList.add("visible");
+          if (cardsEl && cardsEl.parentNode === messagesEl) {
+            messagesEl.insertBefore(el, cardsEl);
+          } else {
+            messagesEl.appendChild(el);
+          }
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          el.classList.remove("visible");
+        }
+      }
+
+      function scrollBottom() {
+        messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: "smooth" });
+      }
+
+      function renderText(text) {
+        let h = escHtml(text);
+        h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+        h = h.replace(/^### (.*)$/gm, "<strong>$1</strong>");
+        h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        return h.split("\n\n").map(p => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+      }
+
+      function escHtml(str) {
+        const el = document.createElement("span");
+        el.textContent = String(str);
+        return el.innerHTML;
+      }
+
+      // Cosmetic-only: a static greeting shown on load so the chat isn't empty.
+      // Never added to session history or sent to the server — the real
+      // conversation (and the LLM's own corridor recap) only starts once the
+      // user actually sends a message.
+      addMessage("assistant", "Welcome! 👋 I'm your non-rev travel concierge — here to have hotel checkout links ready the moment you land.\n\nTell me where you're headed, and I'll get started.");
+
+      checkHealth();
+    </script>
+  </body>
+</html>

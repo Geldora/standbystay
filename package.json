@@ -1,0 +1,27 @@
+{
+  "name": "@routestack/standbystay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Non-rev travel concierge for airline employees flying standby",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "start": "tsx src/server.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "@hono/node-server": "^1.13.0",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "chalk": "^5.4.0",
+    "dotenv": "^16.4.0",
+    "hono": "^4.7.0",
+    "openai": "^4.80.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
