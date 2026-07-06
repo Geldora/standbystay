@@ -4,14 +4,11 @@ Built for the RouteStack Build Challenge (21-day hackathon).
 
 ## The problem
 
-Airline employees can fly standby. The tickets are deeply discounted, but the seat availability is confirmed at the last minute, sometimes at the boarding gates.  
-Sometimes, standby travellers don't know which city they'll land in until they clear at the gate. 
-That makes booking a hotel in advance almost impossible. Existing booking tools assume you know your
-itinerary in advance; non-rev travellers fly leg by leg and have no guarantee they end up where they planned to be.
+Airline employees can fly standby. The tickets are deeply discounted, but the seat availability is confirmed at the last minute, i.e. at the boarding gate. Sometimes standby travellers don't know which city they'll land in until they clear the destination at the gate. That makes booking a hotel in advance almost impossible. Existing booking tools assume you know your itinerary in advance; non-rev travellers fly leg by leg and have no guarantee they end up where they planned to be.
 
 As an airline employee, I've been using standby tickets and found myself booking hotels at the boarding gates, or while in the aircraft waiting to take-off, or even when I landed.
 
-This tool was created to solve the problem of standby travelers accommodation.  
+This tool was created to solve the problem of standby travelers booking a first night accommodation in the destination .  
 
 ## What StandByStay does
 
