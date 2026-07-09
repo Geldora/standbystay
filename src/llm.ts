@@ -23,30 +23,30 @@ On every new conversation — regardless of what the user types first — you MU
 Do NOT search silently. Do NOT skip this step under any circumstance.
 
 ══ RULE 2 — SEARCH BOTH CITIES (after user confirms) ══
-Call search_hotels TWICE — once for Paris (destinationId="437227"), once for Barcelona (destinationId="482477").
+Call hotel_search TWICE — once for Paris (destinationId="437227"), once for Barcelona (destinationId="482477").
 The system enforces all other parameters (dates, rooms, coordinates, budget filter) automatically.
 
 After both searches, interpret the tool result for each city:
 • "noBudgetResults": false → hotels found in budget. Briefly describe the top pick (name, price, stars).
 • "noBudgetResults": true → no 3★ hotel within €150 in that city. Say so clearly, state the cheapestAvailablePrice,
   and ask: "Want me to search up to €200/night for [city]?"
-  If yes: call search_hotels again for THAT city only — the system auto-applies the €200 limit.
+  If yes: call hotel_search again for THAT city only — the system auto-applies the €200 limit.
   Do NOT invent any hotel. Do NOT offer hotels from the other city as alternatives.
 
 ══ RULE 3 — RESOLUTION ══
-When the user reports which city they landed in, execute ALL steps below WITHOUT sending any text response until STEP 4. Do not pause, do not ask for confirmation, do not announce intermediate results. Use the hotelId and token already in SESSION STATE — do NOT call search_hotels again.
+When the user reports which city they landed in, execute ALL steps below WITHOUT sending any text response until STEP 4. Do not pause, do not ask for confirmation, do not announce intermediate results. Use the hotelId and token already in SESSION STATE — do NOT call hotel_search again.
 
 STEP 1 — Get rooms and rates (DO NOT respond to user here):
-  Call get_rooms_and_rates with the top pick hotelId from SESSION STATE.
+  Call hotel_get_rooms_and_rates with the top pick hotelId from SESSION STATE.
   Only pass: hotelId. Do NOT pass token, correlationId, checkIn, checkOut, or rooms.
   If it fails: retry once with the backup hotelId from SESSION STATE.
 
 STEP 2 — Revalidate (DO NOT respond to user here):
-  Call revalidate with hotelId and recommendationId from the STEP 1 result.
+  Call hotel_revalidate_rate with hotelId and recommendationId from the STEP 1 result.
   Only pass: hotelId, recommendationId. Do NOT pass token or correlationId.
 
 STEP 3 — Get checkout link (DO NOT respond to user here):
-  Call hotel_get_payment_url with roomId and recommendationId from the STEP 1 result.
+  Call hotel_get_checkout_url with roomId and recommendationId from the STEP 1 result.
   Only pass: roomId, recommendationId. Do NOT pass token, correlationId, or any other field.
 
 STEP 4 — Deliver the link (first and only response to user in this flow):
@@ -59,8 +59,8 @@ If neither city cleared: respond with empathy. No booking needed.
 ══ STRICT RULES ══
 • NEVER ask about flights, routes, departure times, layovers, or seat availability
 • NEVER invent IDs — always use IDs from tool results or SESSION STATE
-• NEVER call flight, car, search_destinations, or any non-hotel tools
-• Only call search_hotels when instructed by Rule 2 or Rule 3 — never speculatively
+• NEVER call flight, car, hotel_search_destinations, or any non-hotel tools
+• Only call hotel_search when instructed by Rule 2 or Rule 3 — never speculatively
 • NEVER suggest the user go directly to a hotel, contact a hotel desk, or book through any channel other than the RouteStack checkout link — always attempt the full booking flow first
 • NEVER offer "Option A / Option B" style alternatives during the resolution flow — execute all steps and deliver the link
 • Keep responses brief — the user is at an airport gate, on a phone
@@ -174,7 +174,7 @@ export function getHotelsPayload(ctx: NonRevContext) {
   };
 }
 
-// Mocked "transaction successful" step — hotel_get_payment_url returns only a checkout
+// Mocked "transaction successful" step — hotel_get_checkout_url returns only a checkout
 // URL, no real confirmation payload exists, so this is built from search/details data
 // already captured in context.booking rather than a real RouteStack booking response.
 export function buildConfirmationSummary(ctx: NonRevContext) {
@@ -213,11 +213,11 @@ export function buildConfirmationSummary(ctx: NonRevContext) {
 // ---------------------------------------------------------------------------
 
 const ALLOWED_TOOLS = new Set([
-  "search_hotels",
-  "get_hotel_details",
-  "get_rooms_and_rates",
-  "revalidate",
-  "hotel_get_payment_url",
+  "hotel_search",
+  "hotel_get_details",
+  "hotel_get_rooms_and_rates",
+  "hotel_revalidate_rate",
+  "hotel_get_checkout_url",
 ]);
 
 export function buildSessionContext(ctx: NonRevContext): string {
@@ -290,7 +290,7 @@ function buildToolArgs(
   const enriched = { ...args };
   const schema = isRecord(tool.inputSchema?.properties) ? tool.inputSchema.properties : {};
 
-  if (name === "search_hotels") {
+  if (name === "hotel_search") {
     const destId = enriched.destinationId as string;
 
     // Budget increase: if this destination was already searched and found nothing in budget,
@@ -317,7 +317,7 @@ function buildToolArgs(
     enriched.currency = CORRIDOR.currency;
   }
 
-  if (name === "get_rooms_and_rates" || name === "get_hotel_details_and_rates") {
+  if (name === "hotel_get_rooms_and_rates") {
     const hotelId = enriched.hotelId as string;
     if (hotelId) {
       for (const [dest, state] of [["paris", context.paris], ["barcelona", context.barcelona]] as const) {
@@ -344,7 +344,7 @@ function buildToolArgs(
     }
     enriched.checkIn = CORRIDOR.checkIn;
     enriched.checkOut = CORRIDOR.checkOut;
-    // get_rooms_and_rates requires a children field that search_hotels does not
+    // hotel_get_rooms_and_rates requires a children field that hotel_search does not
     enriched.rooms = CORRIDOR.rooms.map((r: any) => ({ ...r, children: 0 }));
   }
 
@@ -404,7 +404,7 @@ function captureHotelDetails(json: any, context: NonRevContext) {
 function updateExecutionContext(toolName: string, args: Record<string, unknown>, result: any, context: NonRevContext) {
   if (!result) return;
 
-  if (toolName === "search_hotels") {
+  if (toolName === "hotel_search") {
     const destId = args.destinationId as string;
     const hotels: any[] = result?.result?.result ?? [];
     const token: string = result?.result?.token ?? "";
@@ -477,13 +477,13 @@ function updateExecutionContext(toolName: string, args: Record<string, unknown>,
     else if (destId === CORRIDOR.barcelona.destinationId) context.barcelona = state;
   }
 
-  if (toolName === "get_rooms_and_rates" || toolName === "get_hotel_details_and_rates") {
+  if (toolName === "hotel_get_rooms_and_rates") {
     if (result?.code === 5148 || result?.success === false) {
       // CUG sandbox: offers never have live sessions. Inject placeholder room so
-      // hotel_get_payment_url (a portal deep-link builder) can still be called.
+      // hotel_get_checkout_url (a portal deep-link builder) can still be called.
       const hotelId = args.hotelId as string ?? context.booking.hotelId ?? "unknown";
       const price = context.booking.publishedRate ?? 0;
-      console.log(`[get_rooms_and_rates] 5148 — injecting placeholder room for hotel ${hotelId}`);
+      console.log(`[hotel_get_rooms_and_rates] 5148 — injecting placeholder room for hotel ${hotelId}`);
       context.booking.selectedRoom = {
         roomId: `room-${hotelId}`,
         recommendationId: `rec-${hotelId}`,
@@ -512,22 +512,22 @@ function updateExecutionContext(toolName: string, args: Record<string, unknown>,
     }
   }
 
-  if (toolName === "revalidate") {
+  if (toolName === "hotel_revalidate_rate") {
     // Non-fatal: if revalidate fails (e.g. CUG 5148), keep existing token and continue
     if (result?.result?.token) context.booking.token = result.result.token;
   }
 
-  if (toolName === "get_payment_url" || toolName === "hotel_get_payment_url") {
-    console.log("[get_payment_url raw]", JSON.stringify(result));
+  if (toolName === "hotel_get_checkout_url") {
+    console.log("[hotel_get_checkout_url raw]", JSON.stringify(result));
     const r = result?.result ?? result;
     const url =
       r?.url ?? r?.checkoutUrl ?? r?.paymentUrl ?? r?.deeplink ??
       r?.portalUrl ?? r?.link ?? r?.href ?? r?.redirectUrl;
     if (url) {
       context.booking.checkoutUrl = url;
-      console.log("[get_payment_url] checkout URL:", url);
+      console.log("[hotel_get_checkout_url] checkout URL:", url);
     } else {
-      console.log("[get_payment_url] no URL found in result keys:", Object.keys(r ?? {}));
+      console.log("[hotel_get_checkout_url] no URL found in result keys:", Object.keys(r ?? {}));
     }
   }
 }
@@ -618,9 +618,9 @@ function extractText(result: McpToolResult, toolName: string, args: Record<strin
   }
   const json = extractJson(result);
   if (!json) return result.content.map((c) => c.text ?? JSON.stringify(c)).join("\n");
-  if (toolName === "search_hotels") return buildSearchToolResult(json, args, context);
-  if (toolName === "get_rooms_and_rates" || toolName === "get_hotel_details_and_rates") {
-    // On 5148 (CUG sandbox), return a synthetic room so the LLM continues to hotel_get_payment_url
+  if (toolName === "hotel_search") return buildSearchToolResult(json, args, context);
+  if (toolName === "hotel_get_rooms_and_rates") {
+    // On 5148 (CUG sandbox), return a synthetic room so the LLM continues to hotel_get_checkout_url
     if (json?.code === 5148 || json?.success === false) {
       const b = context.booking;
       const price = b.selectedRoom?.publishedRate ?? b.publishedRate ?? 0;
@@ -641,8 +641,8 @@ function extractText(result: McpToolResult, toolName: string, args: Record<strin
     }
     return JSON.stringify(slimRoomsResult(json));
   }
-  if (toolName === "revalidate") {
-    // On failure, return synthetic success so LLM proceeds to hotel_get_payment_url
+  if (toolName === "hotel_revalidate_rate") {
+    // On failure, return synthetic success so LLM proceeds to hotel_get_checkout_url
     if (json?.code === 5148 || json?.success === false || !json?.result) {
       return JSON.stringify({ result: { success: true, token: context.booking.token } });
     }
@@ -707,12 +707,12 @@ async function chatOpenAICompatible(
       validateArgs(tool, finalArgs);
       onToolCall?.(tool.name, finalArgs);
 
-      // CUG provider requires get_hotel_details before get_rooms_and_rates
-      if (tool.name === "get_rooms_and_rates" && context.booking.hotelId) {
+      // CUG provider requires hotel_get_details before hotel_get_rooms_and_rates
+      if (tool.name === "hotel_get_rooms_and_rates" && context.booking.hotelId) {
         try {
-          const detailsResult = await callTool("get_hotel_details", { hotelId: context.booking.hotelId });
+          const detailsResult = await callTool("hotel_get_details", { hotelId: context.booking.hotelId });
           captureHotelDetails(extractJson(detailsResult), context);
-          console.log("[auto] get_hotel_details called before get_rooms_and_rates");
+          console.log("[auto] hotel_get_details called before hotel_get_rooms_and_rates");
         } catch (_) {}
       }
 
@@ -788,25 +788,26 @@ async function chatAnthropic(
       validateArgs(tool, finalArgs);
       onToolCall?.(block.name, finalArgs);
 
-      // CUG provider requires get_hotel_details before get_rooms_and_rates
-      if (block.name === "get_rooms_and_rates" && context.booking.hotelId) {
+      // CUG provider requires hotel_get_details before hotel_get_rooms_and_rates
+      if (block.name === "hotel_get_rooms_and_rates" && context.booking.hotelId) {
         try {
-          const detailsResult = await callTool("get_hotel_details", { hotelId: context.booking.hotelId });
+          const detailsResult = await callTool("hotel_get_details", { hotelId: context.booking.hotelId });
           const detailsJson = extractJson(detailsResult);
           captureHotelDetails(detailsJson, context);
-          console.log("[auto] get_hotel_details called before get_rooms_and_rates");
-          console.log("[get_hotel_details RAW]", JSON.stringify(detailsJson));
+          console.log("[auto] hotel_get_details called before hotel_get_rooms_and_rates");
+          console.log("[hotel_get_details RAW]", JSON.stringify(detailsJson));
         } catch (_) {}
       }
 
-      if (block.name === "search_hotels" || block.name === "get_rooms_and_rates" || block.name === "revalidate" || block.name === "hotel_get_payment_url") {
+      const loggedTools = ["hotel_search", "hotel_get_rooms_and_rates", "hotel_revalidate_rate", "hotel_get_checkout_url"];
+      if (loggedTools.includes(block.name)) {
         console.log(`[${block.name} ARGS]`, JSON.stringify(finalArgs));
       }
 
       const result = await callTool(block.name, finalArgs);
       const json = extractJson(result);
 
-      if (block.name === "search_hotels" || block.name === "get_rooms_and_rates" || block.name === "revalidate" || block.name === "hotel_get_payment_url") {
+      if (loggedTools.includes(block.name)) {
         console.log(`[${block.name} RAW]`, JSON.stringify(json));
       }
 
