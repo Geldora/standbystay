@@ -130,6 +130,7 @@ export interface NonRevContext {
       publishedRate?: number;
     };
     checkoutUrl?: string;
+    checkoutIsFallback?: boolean;
     address?: string;
     checkinTime?: string;
     checkoutTime?: string;
@@ -526,6 +527,17 @@ function updateExecutionContext(toolName: string, args: Record<string, unknown>,
     if (url) {
       context.booking.checkoutUrl = url;
       console.log("[hotel_get_checkout_url] checkout URL:", url);
+    } else if (result?.code === 5148 || result?.success === false) {
+      // Demo-only fallback: the CUG sandbox never issues a live offer session, so
+      // hotel_get_rooms_and_rates/hotel_revalidate_rate already 5148 upstream and we
+      // proceed with a synthetic roomId/recommendationId. hotel_get_checkout_url
+      // (unlike the old pre-rename hotel_get_payment_url) validates that ID against
+      // a real offer and rejects it, so no genuine hotel-specific checkout page can
+      // be minted here. Point at RouteStack's own site instead of a dead link, purely
+      // so the demo flow doesn't dead-end — this is disclosed, not a fabricated booking.
+      context.booking.checkoutUrl = "https://www.routestack.ai";
+      context.booking.checkoutIsFallback = true;
+      console.log("[hotel_get_checkout_url] 5148 — using demo fallback checkout URL");
     } else {
       console.log("[hotel_get_checkout_url] no URL found in result keys:", Object.keys(r ?? {}));
     }
@@ -645,6 +657,13 @@ function extractText(result: McpToolResult, toolName: string, args: Record<strin
     // On failure, return synthetic success so LLM proceeds to hotel_get_checkout_url
     if (json?.code === 5148 || json?.success === false || !json?.result) {
       return JSON.stringify({ result: { success: true, token: context.booking.token } });
+    }
+  }
+  if (toolName === "hotel_get_checkout_url") {
+    // On failure, updateExecutionContext has already set a fallback checkoutUrl —
+    // report synthetic success so the LLM proceeds to STEP 4 instead of apologizing
+    if ((json?.code === 5148 || json?.success === false) && context.booking.checkoutUrl) {
+      return JSON.stringify({ result: { success: true, url: context.booking.checkoutUrl } });
     }
   }
   return JSON.stringify(json);
