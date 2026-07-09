@@ -4,6 +4,9 @@
   "private": true,
   "description": "Non-rev travel concierge for airline employees flying standby",
   "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "dev": "tsx src/server.ts",
     "start": "tsx src/server.ts",
