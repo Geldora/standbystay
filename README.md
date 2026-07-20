@@ -53,7 +53,7 @@ StandByStay was designed and built with Claude Code, with me directing product d
 
 ## Context for product decisions
 
-I researched the "book both, cancel if destination is not cleared" pattern.  however the free cancellation windows are often relative to the hotel check-in time. Non-rev travellers are looking for last minute availability for the same day as the planned hotel check-in. Booking a room in advance creates a lapsed-cancellation risk. 
+I researched the "book both destinations, cancel the non-cleared destination" pattern.  However, given that non-rev travellers are looking for last minute availability for the same day, booking a room in advance could result in non-refunduble bookings. 
 
 ## What's deliberately out of scope
 
