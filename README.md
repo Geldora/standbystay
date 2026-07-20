@@ -1,6 +1,7 @@
 # StandByStay — A Travel Concierge for Standby (non-rev) travellers 
 
-Built for the RouteStack Build Challenge (21-day hackathon) by [Valentina Borovaya](https://www.linkedin.com/in/valentinaborovaya/)
+Built for the RouteStack Build Challenge (21-day hackathon) by [Valentina Borovaya](https://www.linkedin.com/in/valentinaborovaya/).
+
 StandByStay: https://standbystay.up.railway.app
 
 ## The problem
