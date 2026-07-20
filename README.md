@@ -1,21 +1,15 @@
 # StandByStay — A Travel Concierge for Standby (non-rev) travellers 
 
-Built for the RouteStack Build Challenge (21-day hackathon) by Valentina Borovaya
-LinkedIn: https://www.linkedin.com/in/valentinaborovaya/
+Built for the RouteStack Build Challenge (21-day hackathon) by [Valentina Borovaya](https://www.linkedin.com/in/valentinaborovaya/)
+StandByStay: https://standbystay.up.railway.app
 
 ## The problem
 
-Airline employees can fly standby. The tickets are deeply discounted, but the seat availability is confirmed at the last minute, i.e. at the boarding gate. Sometimes standby travellers don't know which city they'll land in until they clear the destination at the gate. That makes booking a hotel in advance almost impossible. Existing booking tools assume you know your itinerary in advance; non-rev travellers fly leg by leg and have no guarantee they end up where they planned to be.
-
-As an airline employee, I've been using standby tickets and found myself booking hotels at the boarding gates, or while in the aircraft waiting to take-off, or even when I landed.
-
-This tool was created to solve the problem of standby travelers booking a first night accommodation in the destination .  
+Airline employees have an amazing perk: the ability to buy standby tickets at steep discounts. The catch is that those seats are only confirmed at the last minute, sometimes at the boarding gate. This makes arranging accommodation difficult: every existing booking tool assumes travellers have a confirmed itinerary and prefer to plan in advance. As a standby traveller myself, I'd pre-search hotels, keep checkout links open in my browser, and scramble to finalise a booking while boarding the plane or just after landing. It adds anxiety to an already uncertain journey.
 
 ## What StandByStay does
 
-StandByStay is a conversational concierge that
-front-loads the research. Once traveller confirms their destination, they'll only need to 
-confirm and pay.
+StandByStay solves this problem by front-loading the research and deferring the reservation. It's a lightweight conversational hotel concierge for standby travellers. After confirming the parameters (destinations, price, number of nights etc), StandByStay searches all possible destinations simultaneously, holds a top and backup pick per city in reserve, and only triggers a live checkout call once the traveller confirms which destination they cleared. Nothing is booked until the boarding outcome is known. 
 
 ## Limitation of the demo
 
@@ -39,12 +33,12 @@ booking reference pulled from the API's own hotel-details response.
 
 ## AI usage disclosure
 
-I used Claude for planning, designing and coding the StandByStay.
+StandByStay was designed and built with Claude Code, with me directing product decisions and overseeing the outcomes.
 
 ## Architecture
 
 - Node/TypeScript backend (Hono), single-page vanilla JS/HTML frontend
-- Claude drives the conversation and decides
+- Anthropic API drives the conversation and decides
   when to call RouteStack MCP tools; the confirm-before-search gate and
   fixed preference set are enforced in the system prompt, not inferred
 - RouteStack MCP handles hotel search and checkout only — zero flight
@@ -67,5 +61,3 @@ I researched the "book both, cancel if destination is not cleared" pattern.  how
 destinations, no freeform date/destination parsing: the user input is
 hardcoded rather than generalized, and the chat input's free text is a UX
 affordance, not a parser.
-bot or Claude Connector, and why search-retain-display was chosen over a
-hold-then-resolve pattern.
